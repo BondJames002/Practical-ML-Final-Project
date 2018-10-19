@@ -1,0 +1,94 @@
+
+## Load all relevant packages
+
+
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(rattle)
+
+## Download data files and save locally. Set relevant working directory in R
+## Load Test and Train files provided for the assignment. 
+## Remove columns with sparse data from both files
+  
+  
+TrainingFile <-  read.csv("MLQuizTraining.csv", na.strings=c("NA","#DIV/0!",""))
+TrainingFile <- TrainingFile[,colSums(is.na(TrainingFile)) == 0]
+TestingFile <- read.csv("MLQuizTesting.csv", na.strings=c("NA","#DIV/0!",""))
+TestingFile <- TestingFile[,colSums(is.na(TestingFile)) == 0]
+
+
+
+## Create train/validation partitions out of the Training file(70% to 30%)
+## The 20 samples in the testing file will be used separatey as a standalone final testing set
+
+set.seed(787878)
+inTrain <- createDataPartition(y=TrainingFile$classe, p=0.7, list=FALSE)
+TrainingSet <- TrainingFile[inTrain, ] 
+ValidationSet <- TrainingFile[-inTrain, ]
+TestingSet <- TestingFile
+dim(TrainingSet); dim(ValidationSet); dim(TestingSet)
+
+## remove index number column and 
+## columns 2-7 as they don't contribute to the model
+
+TrainingSet   <-TrainingSet[,-c(1:7)]
+ValidationSetcolnames <- colnames(TrainingSet)
+ValidationSet <- ValidationSet[ValidationSetcolnames]
+TestingSet   <-TestingSet[,-c(1:7)]
+dim(TrainingSet) ; dim(ValidationSet); dim(TestingSet)
+
+## Build model for output classe againt all features in the data set
+modFitPass1 <- rpart(classe ~ ., data=TrainingSet, method="class")
+
+## view tree
+fancyRpartPlot(modFitPass1)
+
+
+
+## Predict using holdout set created from training file for the assignment
+predictionsPass1 <- predict(modFitPass1, ValidationSet, type = "class")
+
+## Confusion Matrix
+confusionMatrix(predictionsPass1, ValidationSet$classe)
+
+Reference
+Prediction    A    B    C    D    E
+         A 1522  246   17   83   43
+         B   38  651   99   30   84
+         C   40  114  825  162  140
+         D   49   85   51  600   59
+         E   25   43   34   89  756
+
+Overall Statistics
+                                         
+               Accuracy : 0.7398         
+                 95% CI : (0.7284, 0.751)
+    No Information Rate : 0.2845         
+    P-Value [Acc > NIR] : < 2.2e-16      
+                                         
+                  Kappa : 0.6694         
+ Mcnemar's Test P-Value : < 2.2e-16      
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+Sensitivity            0.9092   0.5716   0.8041   0.6224   0.6987
+Specificity            0.9076   0.9471   0.9062   0.9504   0.9602
+Pos Pred Value         0.7964   0.7217   0.6440   0.7109   0.7983
+Neg Pred Value         0.9618   0.9021   0.9563   0.9278   0.9340
+Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+Detection Rate         0.2586   0.1106   0.1402   0.1020   0.1285
+Detection Prevalence   0.3247   0.1533   0.2177   0.1434   0.1609
+Balanced Accuracy      0.9084   0.7593   0.8551   0.7864   0.8295
+
+
+
+
+
+## Final prediction
+print(predictPass2 <- predict(modFitPass1, TestingSet,type="class"))
+
+
+
